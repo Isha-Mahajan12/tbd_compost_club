@@ -56,9 +56,11 @@ async function getHouseholds() {
             address: row[1],
             rep1Name: row[2],
             rep1Phone: row[3],
-            rep2Name: row[4],
-            rep2Phone: row[5],
-            timestamp: row[6]
+            rep1WhatsApp: row[4] === 'TRUE',
+            rep2Name: row[5],
+            rep2Phone: row[6],
+            rep2WhatsApp: row[7] === 'TRUE',
+            timestamp: row[8]
         }));
     } catch (error) {
         console.error('Error getting households:', error);
@@ -78,8 +80,10 @@ async function addHousehold(household) {
             household.address,
             household.rep1Name,
             household.rep1Phone,
+            household.rep1WhatsApp ? 'TRUE' : 'FALSE',
             household.rep2Name || '',
             household.rep2Phone || '',
+            household.rep2WhatsApp ? 'TRUE' : 'FALSE',
             new Date().toISOString()
         ];
         
