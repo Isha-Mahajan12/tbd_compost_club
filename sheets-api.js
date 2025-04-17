@@ -13,11 +13,14 @@ async function fetchSheetData(sheetName) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?key=${API_KEY}`;
     try {
         const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         return data.values || [];
     } catch (error) {
         console.error('Error fetching sheet data:', error);
-        return [];
+        throw error;
     }
 }
 
@@ -34,6 +37,9 @@ async function appendToSheet(sheetName, data) {
                 values: [data]
             })
         });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         return await response.json();
     } catch (error) {
         console.error('Error appending to sheet:', error);
@@ -43,54 +49,93 @@ async function appendToSheet(sheetName, data) {
 
 // Household functions
 async function getHouseholds() {
-    const data = await fetchSheetData(SHEETS.HOUSEHOLDS);
-    return data.slice(1).map(row => ({
-        householdName: row[0],
-        address: row[1],
-        rep1Name: row[2],
-        rep1Phone: row[3],
-        rep2Name: row[4],
-        rep2Phone: row[5],
-        timestamp: row[6]
-    }));
+    try {
+        const data = await fetchSheetData(SHEETS.HOUSEHOLDS);
+        return data.slice(1).map(row => ({
+            householdName: row[0],
+            address: row[1],
+            rep1Name: row[2],
+            rep1Phone: row[3],
+            rep2Name: row[4],
+            rep2Phone: row[5],
+            timestamp: row[6]
+        }));
+    } catch (error) {
+        console.error('Error getting households:', error);
+        throw error;
+    }
 }
 
 async function addHousehold(household) {
-    const row = [
-        household.householdName,
-        household.address,
-        household.rep1Name,
-        household.rep1Phone,
-        household.rep2Name || '',
-        household.rep2Phone || '',
-        new Date().toISOString()
-    ];
-    return await appendToSheet(SHEETS.HOUSEHOLDS, row);
+    try {
+        // Validate required fields
+        if (!household.householdName || !household.address || !household.rep1Name || !household.rep1Phone) {
+            throw new Error('Missing required fields');
+        }
+
+        const row = [
+            household.householdName,
+            household.address,
+            household.rep1Name,
+            household.rep1Phone,
+            household.rep2Name || '',
+            household.rep2Phone || '',
+            new Date().toISOString()
+        ];
+        
+        await appendToSheet(SHEETS.HOUSEHOLDS, row);
+        return { success: true, message: 'Household added successfully' };
+    } catch (error) {
+        console.error('Error adding household:', error);
+        throw error;
+    }
 }
 
 // Collection functions
 async function getCollections() {
-    const data = await fetchSheetData(SHEETS.COLLECTIONS);
-    return data.slice(1).map(row => ({
-        householdName: row[0],
-        date: row[1],
-        amount: parseFloat(row[2]),
-        binCondition: row[3],
-        notes: row[4],
-        timestamp: row[5]
-    }));
+    try {
+        const data = await fetchSheetData(SHEETS.COLLECTIONS);
+        return data.slice(1).map(row => ({
+            householdName: row[0],
+            date: row[1],
+            amount: parseFloat(row[2]),
+            binCondition: row[3],
+            notes: row[4],
+            timestamp: row[5]
+        }));
+    } catch (error) {
+        console.error('Error getting collections:', error);
+        throw error;
+    }
 }
 
 async function addCollection(collection) {
-    const row = [
-        collection.householdName,
-        collection.date,
-        collection.amount,
-        collection.binCondition,
-        collection.notes || '',
-        new Date().toISOString()
-    ];
-    return await appendToSheet(SHEETS.COLLECTIONS, row);
+    try {
+        // Validate required fields
+        if (!collection.householdName || !collection.date || !collection.amount || !collection.binCondition) {
+            throw new Error('Missing required fields');
+        }
+
+        // Validate amount
+        if (isNaN(collection.amount) || collection.amount <= 0) {
+            throw new Error('Invalid amount');
+        }
+
+        const row = [
+            collection.householdName,
+            collection.date,
+            collection.amount,
+            collection.binCondition,
+            collection.notes || '',
+            new Date().toISOString()
+        ];
+        
+        await appendToSheet(SHEETS.COLLECTIONS, row);
+        return { success: true, message: 'Collection logged successfully' };
+    } catch (error) {
+        console.error('Error adding collection:', error);
+        throw error;
+    }
 }
 
 // Export functions
