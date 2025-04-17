@@ -6,6 +6,7 @@
     <title>Analytics - Compost Club</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
     <script src="sheets-api.js"></script>
     <base href="/tbd_compost_club/">
 </head>
@@ -82,6 +83,9 @@
             <!-- Error State -->
             <div id="errorState" class="hidden text-center py-12">
                 <p class="text-red-500">Error loading analytics. Please try again later.</p>
+                <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                    Retry
+                </button>
             </div>
         </main>
     </div>
@@ -93,6 +97,11 @@
             const errorState = document.getElementById('errorState');
 
             try {
+                // Show loading state
+                loadingState.classList.remove('hidden');
+                analyticsContent.classList.add('hidden');
+                errorState.classList.add('hidden');
+
                 // Fetch data from Google Sheets
                 const [households, collections] = await Promise.all([
                     window.sheetsAPI.getHouseholds(),
@@ -114,7 +123,15 @@
 
                 // This month's total
                 const thisMonthTotal = collections
-                    .filter(collection => new Date(collection.date) >= thisMonth)
+                    .filter(collection => {
+                        try {
+                            const collectionDate = new Date(collection.date);
+                            return collectionDate >= thisMonth;
+                        } catch (e) {
+                            console.error('Error parsing date:', collection.date);
+                            return false;
+                        }
+                    })
                     .reduce((sum, collection) => sum + collection.amount, 0);
                 document.getElementById('thisMonth').textContent = `${thisMonthTotal.toFixed(1)} kg`;
 
@@ -145,7 +162,14 @@
 
                 // Recent activity
                 const recentActivity = collections
-                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .sort((a, b) => {
+                        try {
+                            return new Date(b.date) - new Date(a.date);
+                        } catch (e) {
+                            console.error('Error sorting dates:', a.date, b.date);
+                            return 0;
+                        }
+                    })
                     .slice(0, 5);
 
                 const recentActivityList = document.getElementById('recentActivity');
@@ -153,7 +177,9 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <span class="font-medium">${collection.householdName}</span>
-                            <span class="text-gray-500 text-sm ml-2">${new Date(collection.date).toLocaleDateString()}</span>
+                            <span class="text-gray-500 text-sm ml-2">
+                                ${new Date(collection.date).toLocaleDateString()}
+                            </span>
                         </div>
                         <span class="text-green-600">${collection.amount.toFixed(1)} kg</span>
                     </div>
@@ -162,7 +188,14 @@
                 // Inactive households
                 const activeHouseholdNames = new Set(
                     collections
-                        .filter(collection => new Date(collection.date) > twoWeeksAgo)
+                        .filter(collection => {
+                            try {
+                                return new Date(collection.date) > twoWeeksAgo;
+                            } catch (e) {
+                                console.error('Error checking inactive households:', collection.date);
+                                return false;
+                            }
+                        })
                         .map(collection => collection.householdName)
                 );
 
@@ -184,6 +217,7 @@
             } catch (error) {
                 console.error('Error loading analytics:', error);
                 loadingState.classList.add('hidden');
+                analyticsContent.classList.add('hidden');
                 errorState.classList.remove('hidden');
             }
         });
