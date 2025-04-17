@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Collection - Compost Club</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="sheets-api.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-green-700 mb-2">Log Compost Collection</h1>
+            <div class="flex flex-wrap justify-center gap-4 mb-4">
+                <a href="/index.html" class="text-green-600 hover:text-green-800">← Home</a>
+                <a href="/add-household.html" class="text-green-600 hover:text-green-800">Add Household</a>
+                <a href="/view-households.html" class="text-green-600 hover:text-green-800">View Households</a>
+                <a href="/analytics.html" class="text-green-600 hover:text-green-800">Analytics</a>
+            </div>
+        </header>
+
+        <main class="max-w-2xl mx-auto">
+            <form id="collectionForm" class="bg-white p-6 rounded-lg shadow-md">
+                <!-- Household Selection -->
+                <div class="mb-6">
+                    <label for="householdSelect" class="block text-gray-700 font-medium mb-2">Select Household *</label>
+                    <select id="householdSelect" name="householdSelect" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Choose a household...</option>
+                    </select>
+                </div>
+
+                <!-- Collection Date -->
+                <div class="mb-6">
+                    <label for="collectionDate" class="block text-gray-700 font-medium mb-2">Collection Date *</label>
+                    <input type="date" id="collectionDate" name="collectionDate" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+
+                <!-- Amount Collected -->
+                <div class="mb-6">
+                    <label for="amount" class="block text-gray-700 font-medium mb-2">Amount Collected (kg) *</label>
+                    <input type="number" id="amount" name="amount" step="0.1" min="0" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+
+                <!-- Bin Condition -->
+                <div class="mb-6">
+                    <label for="binCondition" class="block text-gray-700 font-medium mb-2">Bin Condition *</label>
+                    <select id="binCondition" name="binCondition" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="Good">Good</option>
+                        <option value="Needs Cleaning">Needs Cleaning</option>
+                        <option value="Broken">Broken</option>
+                    </select>
+                </div>
+
+                <!-- Notes -->
+                <div class="mb-6">
+                    <label for="notes" class="block text-gray-700 font-medium mb-2">Notes</label>
+                    <textarea id="notes" name="notes" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Any additional notes about the collection..."></textarea>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button type="submit"
+                        class="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        Log Collection
+                    </button>
+                    <button type="reset"
+                        class="bg-gray-200 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                        Clear Form
+                    </button>
+                </div>
+            </form>
+
+            <!-- Success Message -->
+            <div id="successMessage" class="hidden mt-6 p-4 bg-green-100 text-green-700 rounded-md">
+                Collection logged successfully!
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('collectionForm');
+            const householdSelect = document.getElementById('householdSelect');
+            const collectionDate = document.getElementById('collectionDate');
+            const successMessage = document.getElementById('successMessage');
+
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            collectionDate.value = today;
+
+            // Load households into dropdown
+            function loadHouseholds() {
+                const households = JSON.parse(localStorage.getItem('households')) || [];
+                householdSelect.innerHTML = '<option value="">Choose a household...</option>';
+                
+                households.forEach((household, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = household.householdName;
+                    householdSelect.appendChild(option);
+                });
+            }
+
+            // Handle form submission
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const selectedHouseholdIndex = householdSelect.value;
+                const households = JSON.parse(localStorage.getItem('households')) || [];
+                const selectedHousehold = households[selectedHouseholdIndex];
+
+                const collectionData = {
+                    householdId: selectedHouseholdIndex,
+                    householdName: selectedHousehold.householdName,
+                    date: collectionDate.value,
+                    amount: parseFloat(document.getElementById('amount').value),
+                    binCondition: document.getElementById('binCondition').value,
+                    notes: document.getElementById('notes').value,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Get existing collections or initialize empty array
+                let collections = JSON.parse(localStorage.getItem('collections')) || [];
+                
+                // Add new collection
+                collections.push(collectionData);
+                
+                // Save back to localStorage
+                localStorage.setItem('collections', JSON.stringify(collections));
+
+                // Show success message
+                successMessage.classList.remove('hidden');
+                
+                // Hide success message after 3 seconds
+                setTimeout(() => {
+                    successMessage.classList.add('hidden');
+                }, 3000);
+
+                // Reset form
+                form.reset();
+                // Reset date to today
+                collectionDate.value = today;
+            });
+
+            // Initial load
+            loadHouseholds();
+        });
+    </script>
+</body>
+</html> 

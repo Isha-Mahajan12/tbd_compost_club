@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Household - Compost Club</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="sheets-api.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-green-700 mb-2">Add New Household</h1>
+            <a href="/index.html" class="text-green-600 hover:text-green-800">← Back to Home</a>
+        </header>
+
+        <main class="max-w-2xl mx-auto">
+            <form id="householdForm" class="bg-white p-6 rounded-lg shadow-md">
+                <!-- Household Name -->
+                <div class="mb-6">
+                    <label for="householdName" class="block text-gray-700 font-medium mb-2">Household Name *</label>
+                    <input type="text" id="householdName" name="householdName" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+
+                <!-- Address -->
+                <div class="mb-6">
+                    <label for="address" class="block text-gray-700 font-medium mb-2">Address *</label>
+                    <textarea id="address" name="address" required rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+                </div>
+
+                <!-- Representative 1 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-700 mb-4">Primary Representative *</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="rep1Name" class="block text-gray-700 font-medium mb-2">Name</label>
+                            <input type="text" id="rep1Name" name="rep1Name" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label for="rep1Phone" class="block text-gray-700 font-medium mb-2">Phone</label>
+                            <input type="tel" id="rep1Phone" name="rep1Phone" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Representative 2 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-700 mb-4">Secondary Representative (Optional)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="rep2Name" class="block text-gray-700 font-medium mb-2">Name</label>
+                            <input type="text" id="rep2Name" name="rep2Name"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label for="rep2Phone" class="block text-gray-700 font-medium mb-2">Phone</label>
+                            <input type="tel" id="rep2Phone" name="rep2Phone"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button type="submit" id="submitButton"
+                        class="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        Add Household
+                    </button>
+                    <button type="reset"
+                        class="bg-gray-200 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                        Clear Form
+                    </button>
+                </div>
+            </form>
+
+            <!-- Success Message -->
+            <div id="successMessage" class="hidden mt-6 p-4 bg-green-100 text-green-700 rounded-md">
+                Household added successfully!
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="hidden mt-6 p-4 bg-red-100 text-red-700 rounded-md">
+                Error adding household. Please try again.
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('householdForm');
+            const submitButton = document.getElementById('submitButton');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Disable submit button and show loading state
+                submitButton.disabled = true;
+                submitButton.innerHTML = 'Adding...';
+
+                try {
+                    // Get form data
+                    const householdData = {
+                        householdName: document.getElementById('householdName').value,
+                        address: document.getElementById('address').value,
+                        rep1Name: document.getElementById('rep1Name').value,
+                        rep1Phone: document.getElementById('rep1Phone').value,
+                        rep2Name: document.getElementById('rep2Name').value,
+                        rep2Phone: document.getElementById('rep2Phone').value
+                    };
+
+                    // Add to Google Sheet
+                    await window.sheetsAPI.addHousehold(householdData);
+
+                    // Show success message
+                    successMessage.classList.remove('hidden');
+                    errorMessage.classList.add('hidden');
+                    
+                    // Hide success message after 3 seconds
+                    setTimeout(() => {
+                        successMessage.classList.add('hidden');
+                    }, 3000);
+
+                    // Reset form
+                    form.reset();
+                } catch (error) {
+                    console.error('Error adding household:', error);
+                    errorMessage.classList.remove('hidden');
+                    successMessage.classList.add('hidden');
+                } finally {
+                    // Re-enable submit button
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Add Household';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

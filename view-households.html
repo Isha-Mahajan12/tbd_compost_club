@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Households - Compost Club</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="sheets-api.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-green-700 mb-2">Households</h1>
+            <div class="flex flex-wrap justify-center gap-4 mb-4">
+                <a href="/index.html" class="text-green-600 hover:text-green-800">← Home</a>
+                <a href="/add-household.html" class="text-green-600 hover:text-green-800">+ Add Household</a>
+                <a href="/log-collection.html" class="text-green-600 hover:text-green-800">Log Collection</a>
+                <a href="/analytics.html" class="text-green-600 hover:text-green-800">Analytics</a>
+            </div>
+        </header>
+
+        <main class="max-w-4xl mx-auto">
+            <!-- Search and Filter Section -->
+            <div class="mb-6">
+                <input type="text" id="searchInput" placeholder="Search households..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+
+            <!-- Households List -->
+            <div id="householdsList" class="space-y-4">
+                <!-- Household cards will be dynamically inserted here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-12">
+                <p class="text-gray-500">No households found. Add your first household!</p>
+                <a href="/add-household.html" class="mt-4 inline-block bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700">
+                    Add Household
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const householdsList = document.getElementById('householdsList');
+            const emptyState = document.getElementById('emptyState');
+            const searchInput = document.getElementById('searchInput');
+
+            function formatDate(timestamp) {
+                if (!timestamp) return 'No collections yet';
+                const date = new Date(timestamp);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+
+            function renderHouseholds(households) {
+                householdsList.innerHTML = '';
+                
+                if (households.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+                
+                households.forEach((household, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow';
+                    card.innerHTML = `
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-green-700 mb-2">${household.householdName}</h3>
+                                <p class="text-gray-600 mb-2">${household.address}</p>
+                                <div class="text-sm text-gray-500">
+                                    <p>Primary: ${household.rep1Name} (${household.rep1Phone})</p>
+                                    ${household.rep2Name ? `<p>Secondary: ${household.rep2Name} (${household.rep2Phone})</p>` : ''}
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <button onclick="viewHousehold(${index})" 
+                                    class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                                    View
+                                </button>
+                                <button onclick="editHousehold(${index})"
+                                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                                    Edit
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    householdsList.appendChild(card);
+                });
+            }
+
+            function loadHouseholds() {
+                const households = JSON.parse(localStorage.getItem('households')) || [];
+                renderHouseholds(households);
+            }
+
+            // Search functionality
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const households = JSON.parse(localStorage.getItem('households')) || [];
+                const filteredHouseholds = households.filter(household => 
+                    household.householdName.toLowerCase().includes(searchTerm) ||
+                    household.rep1Name.toLowerCase().includes(searchTerm) ||
+                    (household.rep2Name && household.rep2Name.toLowerCase().includes(searchTerm))
+                );
+                renderHouseholds(filteredHouseholds);
+            });
+
+            // View household function
+            window.viewHousehold = (index) => {
+                const households = JSON.parse(localStorage.getItem('households')) || [];
+                const household = households[index];
+                // TODO: Implement view household details page
+                alert(`Viewing household: ${household.householdName}`);
+            };
+
+            // Edit household function
+            window.editHousehold = (index) => {
+                const households = JSON.parse(localStorage.getItem('households')) || [];
+                const household = households[index];
+                // TODO: Implement edit household functionality
+                alert(`Editing household: ${household.householdName}`);
+            };
+
+            // Initial load
+            loadHouseholds();
+        });
+    </script>
+</body>
+</html> 
